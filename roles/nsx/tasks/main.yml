@@ -1,0 +1,76 @@
+---
+- name: Retrieve syslog settings
+  uri:
+    url: "https://{{ inventory_hostname }}/api/1.0/appliance-management/system/syslogserver"
+    HEADER_Accept: "application/json"
+    method: GET
+    validate_certs: no
+    user: "{{ user }}"
+    password: "{{ password }}"
+    force_basic_auth: yes
+    body_format: json
+  register: result
+
+- name: Apply syslog settings
+  uri:
+    url: "https://{{ inventory_hostname }}/api/1.0/appliance-management/system/syslogserver"
+    HEADER_Accept: "application/json"
+    method: PUT
+    validate_certs: no
+    user: "{{ user }}"
+    password: "{{ password }}"
+    force_basic_auth: yes
+    body_format: json
+    body: "{{ lookup('template', 'manager-syslog.j2') | to_json }}"
+  when: (result.json is not defined) or 
+        (result.json.syslogServer != "{{ syslog_host }}") or
+        (result.json.port != "{{ syslog_port }}") or
+        (result.json.protocol != "{{ syslog_protocol|upper }}")
+
+- name: Get Edge Devices
+  uri:
+    url: "https://{{ inventory_hostname }}/api/4.0/edges"
+    HEADER_Accept: "application/json"
+    method: GET
+    validate_certs: no
+    user: "{{ user }}"
+    password: "{{ password }}"
+    force_basic_auth: yes
+    body_format: json
+  register: edges
+
+- name: Check Edge Syslog Settings
+  uri:
+    url: "https://{{ inventory_hostname }}/api/4.0/edges/{{ item.id }}/syslog/config"
+    HEADER_Accept: "application/json"
+    method: GET
+    validate_certs: no
+    user: "{{ user }}"
+    password: "{{ password }}"
+    force_basic_auth: yes
+    body_format: json
+  with_items: "{{ edges.json.edgePage.data }}"
+  register: edge_syslog
+  no_log: True
+
+- name: Apply Edge syslog settings
+  uri:
+    url: "https://{{ inventory_hostname }}/api/4.0/edges/{{ item.item.id }}/syslog/config"
+    HEADER_Content-Type: "application/xml"
+    method: PUT
+    validate_certs: no
+    user: "{{ user }}"
+    password: "{{ password }}"
+    force_basic_auth: yes
+    body_format: raw
+    body: "{{ lookup('template', 'edge-syslog.j2') }}"
+    status_code: 204
+  with_items: "{{ edge_syslog.results }}"
+  when: 
+        (item.json.enabled == false) or
+        (not (item.json.serverAddresses.ipAddress is defined and "{{ syslog_host }}" in item.json.serverAddresses.ipAddress) or
+        not (item.json.protocol is defined and item.json.protocol == "tcp"))
+  no_log: True
+
+#- name: Debug request
+  #debug: var=edge_syslog

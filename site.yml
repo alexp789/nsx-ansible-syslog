@@ -1,0 +1,5 @@
+---
+- name: NSX Configuration
+  hosts: all
+  roles:
+   - nsx

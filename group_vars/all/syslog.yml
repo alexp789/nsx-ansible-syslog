@@ -1,0 +1,4 @@
+---
+syslog_host: vrli01.lab.vrandom.com
+syslog_port: 514
+syslog_protocol: tcp

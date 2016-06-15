@@ -1,0 +1,5 @@
+[nsx_managers:vars]
+ansible_connection=local
+
+[nsx_managers]
+nsx01.lab.vrandom.com user=admin password=XXXXXX
