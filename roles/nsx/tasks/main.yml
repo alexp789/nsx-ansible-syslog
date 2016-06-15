@@ -69,7 +69,7 @@
   when: 
         (item.json.enabled == false) or
         (not (item.json.serverAddresses.ipAddress is defined and "{{ syslog_host }}" in item.json.serverAddresses.ipAddress) or
-        not (item.json.protocol is defined and item.json.protocol == "tcp"))
+        not (item.json.protocol is defined and item.json.protocol == "{{ syslog_protocol|lower }}"))
   no_log: True
 
 #- name: Debug request
